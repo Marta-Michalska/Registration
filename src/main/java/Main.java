@@ -35,7 +35,7 @@ public class Main {
             XSSFSheet sheet = workbook.getSheetAt(0);
             for (int i = 1; i < sheet.getPhysicalNumberOfRows(); i++) {
                 Row row = sheet.getRow(i);
-                patientsList.add(new Patient(row.getCell(0).toString(),row.getCell(1).toString(), new Long(row.getCell(2).toString()), Corona.valueOf(row.getCell(3).toString()) ,Double.valueOf(row.getCell(4).toString())));
+                patientsList.add(new Patient(row.getCell(0).toString(), row.getCell(1).toString(), Long.parseLong(row.getCell(2).toString()), Corona.valueOf(row.getCell(3).toString()), Double.parseDouble(row.getCell(4).toString())));
             }
 
 
