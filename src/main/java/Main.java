@@ -1,80 +1,190 @@
+import com.sun.xml.internal.bind.v2.TODO;
+import javafx.scene.chart.ScatterChart;
 import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.security.spec.RSAOtherPrimeInfo;
 import java.sql.SQLOutput;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.InputMismatchException;
 import java.util.List;
 import java.util.Scanner;
 
 public class Main {
 
     private static final String FILE_NAME = "src/main/resources/Patients.xlsx";
+    private static Scanner scanner = new Scanner(System.in);
+    private static List<Patient> patientsList;
+
 
     public static void main(String[] args) {
 
-
-        List<Patient> patientsList = new ArrayList<>();
-        patientsList.add(new Patient("Jan", "Kowalski", 12345678901L));
-
-
-        Scanner scanner = new Scanner(System.in);
-        System.out.println("Wpisz imię");
-        String nameIn = scanner.nextLine();
-        System.out.println("Witaj " + nameIn + "! A teraz wpisz nazwisko.");
-        String surnameIn = scanner.nextLine();
-        System.out.println("Dzięki " + nameIn + " " + surnameIn + ". Wpisz swój numer PESEL.");
-        long peselIn = scanner.nextLong();
-
-        while (peselIn < 10000000000L || peselIn > 99999999999L)
-        //Jak do cholery napisać warunek, że while w dostarczonych danych nie ma longa?...
-        {
-            System.out.println("Podaj prawidłowy numer PESEL: 11 cyfr bez spacji, przecinków ani innych znaków");
-            peselIn = scanner.nextLong();
-
-        }
-
-        System.out.println("Ok " + nameIn + ". Twoje dane to: " + nameIn + " " + surnameIn + ", PESEL: " + peselIn + ".");
-
-        patientsList.add(new Patient(nameIn, surnameIn, peselIn));
-
-
-        System.out.println("Zostałeś zarejestrowany!");
-        System.out.println(patientsList);
-
-        XSSFWorkbook workbook = new XSSFWorkbook();
-        XSSFSheet sheet = workbook.createSheet("Pacjenci");
-        creatingPatientsExcel(sheet,patientsList);
+        patientsList = new ArrayList<>();
+        patientsList.add(new Patient("Jan", "Kowalski", 12345678901L, Corona.CHORY, 500));
+        patientsList.add(new Patient("Anna", "Kowalska", 32145678901L, Corona.ZDROWY, 30));
+        patientsList.add(new Patient("Jan", "Kowalski", 23145678901L, Corona.BRAK_DANYCH, 1500));
         try {
-            FileOutputStream outputStream = new FileOutputStream(FILE_NAME);
-            workbook.write(outputStream);
-            workbook.close();
+            FileInputStream puller = new FileInputStream(FILE_NAME);
+            XSSFWorkbook workbook = new XSSFWorkbook(puller);
+            XSSFSheet sheet = workbook.getSheetAt(0);
+            for (int i = 1; i < sheet.getPhysicalNumberOfRows(); i++) {
+                Row row = sheet.getRow(i);
+                patientsList.add(new Patient(row.getCell(0).toString(),row.getCell(1).toString(), new Long(row.getCell(2).toString()), Corona.valueOf(row.getCell(3).toString()) ,Double.valueOf(row.getCell(4).toString())));
+            }
 
+
+        } catch (FileNotFoundException e) {
+            System.out.println("Upsss... Niewłaściwie źródło");
+            e.printStackTrace();
         } catch (IOException e) {
+            System.out.println("Upsss... Nie znaleziono pliku");
+
             e.printStackTrace();
         }
 
-
-
+        start();
     }
 
-    private static void creatingPatientsExcel(XSSFSheet sheet, List<Patient> patientList) {
-        int rowNum = 0;
-        Row row = sheet.createRow(rowNum++);
-        row.createCell(0).setCellValue("Imię");
-        row.createCell(1).setCellValue("Nazwisko");
-        row.createCell(2).setCellValue("PESEL");
-        for (Patient patient : patientList) {
-            row = sheet.createRow(rowNum++);
-            row.createCell(0).setCellValue(patient.getName());
-            row.createCell(1).setCellValue(patient.getSurname());
-            row.createCell(2).setCellValue(patient.getPesel());
+    public static void start() {
+        System.out.println("Wybierz akcje: \n0 - Zakończ \n1 - Sprawdź czy pacjent jest zarejestrowany " +
+                "\n2 - Zarejestruj pacjenta \n3 - Usuń pacjenta \n4 - Zleć badanie na koronawirusa");
+        Scanner scanner = new Scanner(System.in);
+        try {
+            Integer action = scanner.nextInt();
+            actionType(action);
+        } catch (InputMismatchException exception) {
+            System.out.println("Co Ty mi tu wypisujesz. Jeszcze raz...");
+            start();
+        }
+    }
+
+
+    private static void actionType(int a) {
+        switch (a) {
+            case 0: {
+                System.out.println("Do widzenia!");
+                break;
+            }
+            case 1: {
+                System.out.println("Jak chcesz wyszukiwać? \n1- Po imieniu i nazwisku \n2-Po PESELu \n0-Zakończ");
+                int action = scanner.nextInt();
+                switch (action) {
+
+                    case 0: {
+                        System.out.println("Do zobaczenia!");
+                        break;
+                    }
+
+                    case 1: {
+                        System.out.println("Wpisz imię");
+                        String nameIn = scanner.next();
+                        System.out.println("Wpisz nazwisko");
+                        String surnameIn = scanner.next();
+                        boolean isReg = Actions.isRegistered(patientsList, nameIn, surnameIn);
+                        if (isReg) {
+                            System.out.println("Pacjent o takim imieniu i nazwisku jest zarejestrowany");
+                        } else {
+                            System.out.println("Pacjent o takim imieniu i nazwisku nie jest zarejestrowany");
+                        }
+                        start();
+                    }
+                    case 2: {
+                        System.out.println("Wpisz PESEL");
+                        long peselIn = scanner.nextLong();
+                        boolean isReg = Actions.isRegistered(patientsList, peselIn);
+                        if (isReg) {
+                            System.out.println("Pacjent jest zarejestrowany");
+                        } else {
+                            System.out.println("Pacjent nie jest zarejestrowany");
+                        }
+                        start();
+                    }
+                }
+            }
+            case 2: {
+                registration();
+                start();
+                break;
+            }
+            case 3: {
+                removing();
+                start();
+                break;
+            }
+            case 4: {
+                System.out.println("Wpisz numer PESEL pacjenta, któremu chcesz zlecić badanie");
+                long peselIn = scanner.nextLong();
+                Actions.runCoronaTest(Actions.findPatient(peselIn, patientsList));
+                start();
+                break;
+
+            }
+            default: {
+                System.out.println("Podałeś niewłaściwy numer. Wpisz numer od 0 do 4");
+                start();
+
+            }
+        }
+    }
+
+
+    private static void registration() {
+        System.out.println("Wpisz imię");
+        String nameIn = scanner.next();
+        System.out.println("Witaj " + nameIn + "! Teraz wpisz nazwisko.");
+        String surnameIn = scanner.next();
+        System.out.println("Dzięki " + nameIn + " " + surnameIn + ". Wpisz swój numer PESEL.");
+        long peselIn = scanner.nextLong();
+        boolean isReg = Actions.isRegistered(patientsList, peselIn);
+        if (isReg == true) {
+            System.out.println("Pacjent o tym PESELu jest już zarejestrowany. Spróbuj jeszcze raz.");
+            registration();
+        } else {
+
+
+            while (peselIn < 10000000000L || peselIn > 99999999999L) {
+
+
+                System.out.println("Podaj prawidłowy numer PESEL: 11 cyfr bez spacji, przecinków ani innych znaków");
+                peselIn = scanner.nextLong();
+            }
+
+
         }
 
+        System.out.println("Ok " + nameIn + ". Twoje dane to: " + nameIn + " " + surnameIn + ", PESEL: " + peselIn + "." +
+                " Jaką kwotę chcesz zdeponować w swoim wirtualnym portfelu?");
+        double walletIn = scanner.nextDouble();
+
+
+        patientsList.add(new Patient(nameIn, surnameIn, peselIn, Corona.BRAK_DANYCH, walletIn));
+
+        creatingXLSX.createExcel(patientsList);
+        System.out.println("Zostałeś zarejestrowany!");
+    }
+
+    private static void removing() {
+        System.out.println("Wpisz numer PESEL pacjenta, którego chcesz usunąć");
+        long peselIn = scanner.nextLong();
+        Patient tempPatient = Actions.findPatient(peselIn, patientsList);
+        if (tempPatient == null) {
+            System.out.println("Nie ma takiego pacjenta");
+        } else {
+            patientsList.remove(tempPatient);
+            creatingXLSX.createExcel(patientsList);
+            System.out.println("Udało Ci się usunąć pacjenta: " + tempPatient.toString());
+        }
     }
 
 }
+
+
+
+
+
