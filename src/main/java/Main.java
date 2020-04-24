@@ -1,9 +1,6 @@
 import com.sun.xml.internal.bind.v2.TODO;
 import javafx.scene.chart.ScatterChart;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
@@ -11,10 +8,7 @@ import java.io.*;
 import java.security.spec.RSAOtherPrimeInfo;
 import java.sql.SQLOutput;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.InputMismatchException;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 
 public class Main {
 
@@ -26,16 +20,20 @@ public class Main {
     public static void main(String[] args) {
 
         patientsList = new ArrayList<>();
-        patientsList.add(new Patient("Jan", "Kowalski", 12345678901L, Corona.CHORY, 500));
+
+       //test patientsList
+      /* patientsList.add(new Patient("Jan", "Kowalski", 12345678901L, Corona.CHORY, 500));
         patientsList.add(new Patient("Anna", "Kowalska", 32145678901L, Corona.ZDROWY, 30));
-        patientsList.add(new Patient("Jan", "Kowalski", 23145678901L, Corona.BRAK_DANYCH, 1500));
+        patientsList.add(new Patient("Jan", "Kowalski", 23145678901L, Corona.BRAK_DANYCH, 1500));*/
+
         try {
             FileInputStream puller = new FileInputStream(FILE_NAME);
             XSSFWorkbook workbook = new XSSFWorkbook(puller);
             XSSFSheet sheet = workbook.getSheetAt(0);
             for (int i = 1; i < sheet.getPhysicalNumberOfRows(); i++) {
                 Row row = sheet.getRow(i);
-                patientsList.add(new Patient(row.getCell(0).toString(), row.getCell(1).toString(), Long.parseLong(row.getCell(2).toString()), Corona.valueOf(row.getCell(3).toString()), Double.parseDouble(row.getCell(4).toString())));
+                DataFormatter formatter = new DataFormatter();
+                patientsList.add(new Patient(row.getCell(0).toString(), row.getCell(1).toString(), Long.parseLong(formatter.formatCellValue(row.getCell(2))), Corona.valueOf(row.getCell(3).toString()), Double.parseDouble(row.getCell(4).toString())));
             }
 
 
@@ -54,28 +52,34 @@ public class Main {
     public static void start() {
         System.out.println("Wybierz akcje: \n0 - Zakończ \n1 - Sprawdź czy pacjent jest zarejestrowany " +
                 "\n2 - Zarejestruj pacjenta \n3 - Usuń pacjenta \n4 - Zleć badanie na koronawirusa");
-        Scanner scanner = new Scanner(System.in);
+
         try {
             Integer action = scanner.nextInt();
             actionType(action);
         } catch (InputMismatchException exception) {
             System.out.println("Co Ty mi tu wypisujesz. Jeszcze raz...");
+            scanner.nextLine();
             start();
         }
+
     }
 
 
     private static void actionType(int a) {
         switch (a) {
-            case 0: {
+            case 0:
                 System.out.println("Do widzenia!");
+                try {
+                    creatingXLSX.workbook.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
                 break;
-            }
+
             case 1: {
                 System.out.println("Jak chcesz wyszukiwać? \n1- Po imieniu i nazwisku \n2-Po PESELu \n0-Zakończ");
                 int action = scanner.nextInt();
                 switch (action) {
-
                     case 0: {
                         System.out.println("Do zobaczenia!");
                         break;
@@ -120,7 +124,7 @@ public class Main {
             case 4: {
                 System.out.println("Wpisz numer PESEL pacjenta, któremu chcesz zlecić badanie");
                 long peselIn = scanner.nextLong();
-                Actions.runCoronaTest(Actions.findPatient(peselIn, patientsList));
+                runCoronaTest(Actions.findPatient(peselIn, patientsList));
                 start();
                 break;
 
@@ -180,6 +184,72 @@ public class Main {
             creatingXLSX.createExcel(patientsList);
             System.out.println("Udało Ci się usunąć pacjenta: " + tempPatient.toString());
         }
+    }
+    public static void runCoronaTest(Patient patient) {
+
+        double wallet = patient.getWallet();
+
+        if (wallet < 500) {
+            System.out.println("Sorry, masz za mało środków w portfelu żeby wykonać test!");
+            Main.start();
+        }
+
+        wallet = wallet - 500;
+        patient.setWallet(wallet);
+
+
+        System.out.println("Czy jesteś chory na koronawirusa? Wybierz odpowiednią wartość: \n0 Oczywiście, że nie " +
+                "\n1 No pewnie, że tak \n2 Nie wiem");
+        Scanner scanner = new Scanner(System.in);
+        int a = scanner.nextInt();
+        switch (a) {
+            case 0: {
+
+                patient.setCorona(Corona.ZDROWY);
+                System.out.println("Garatuluję, Zakończylismy test na koronawirusa, jesteś zdrowy. " +
+                        "Stan Twojego konta to: " + wallet);
+                creatingXLSX.createExcel(patientsList);
+                break;
+            }
+            case 1: {
+                patient.setCorona(Corona.CHORY);
+                System.out.println("Gratuluję. Test na koronawirusa wypadł pozytywnie. Sugeruję kontakt z Sanepidem. " +
+                        "Stan Twojego konta to: " + wallet);
+                creatingXLSX.createExcel(patientsList);
+                break;
+            }
+            case 2: {
+                Random generator = new Random();
+                System.out.println("Poliż ekran i wpisz OK");
+                if (scanner.next().equalsIgnoreCase("OK")) {
+                    System.out.println("Przeprowadzam analizę...");
+                   /* TimeUnit.SECONDS.sleep(2);
+                    System.out.println("Nadal analizuję...");
+                    TimeUnit.SECONDS.sleep(2);
+                    System.out.println("Jeszcze tylko chwila...");*/
+                    boolean cor = generator.nextBoolean();
+                    if (cor) {
+                        patient.setCorona(Corona.ZDROWY);
+                        System.out.println("Garatuluję, Zakończylismy test na koronawirusa, jesteś zdrowy. ");
+
+                    } else {
+                        patient.setCorona(Corona.CHORY);
+                        System.out.println("Gratuluję. Test na koronawirusa wypadł pozytywnie. Sugeruję kontakt z Sanepidem. ");
+                    }
+                }
+                System.out.println("Stan Twojego konta to: " + wallet);
+                creatingXLSX.createExcel(patientsList);
+                break;
+            }
+            default: {
+                System.out.println("Wybrałeś niewłaściwą wartość");
+                Main.start();
+            }
+
+
+        }
+
+
     }
 
 }

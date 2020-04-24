@@ -6,7 +6,7 @@ import lombok.Data;
 public class Patient {
     private String name;
     private String surname;
-    private long pesel;
+    private Long pesel;
     private Corona corona;
     private double wallet;
 

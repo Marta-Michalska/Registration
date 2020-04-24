@@ -15,11 +15,12 @@ public class creatingXLSX {
     private static final String FILE_NAME = "src/main/resources/Patients.xlsx";
 
     public static void createExcel(List<Patient> patientsList) {
+        creatingPatientsExcel(sheet, patientsList);
         try {
             FileOutputStream outputStream = new FileOutputStream(FILE_NAME);
             workbook.write(outputStream);
-            workbook.close();
-            creatingPatientsExcel(sheet, patientsList);
+
+
 
         } catch (
                 IOException e) {
