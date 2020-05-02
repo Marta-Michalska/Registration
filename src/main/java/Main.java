@@ -21,7 +21,7 @@ public class Main {
 
         patientsList = new ArrayList<>();
 
-       //test patientsList
+        //test patientsList
       /* patientsList.add(new Patient("Jan", "Kowalski", 12345678901L, Corona.CHORY, 500));
         patientsList.add(new Patient("Anna", "Kowalska", 32145678901L, Corona.ZDROWY, 30));
         patientsList.add(new Patient("Jan", "Kowalski", 23145678901L, Corona.BRAK_DANYCH, 1500));*/
@@ -124,7 +124,10 @@ public class Main {
             case 4: {
                 System.out.println("Wpisz numer PESEL pacjenta, któremu chcesz zlecić badanie");
                 long peselIn = scanner.nextLong();
-                runCoronaTest(Actions.findPatient(peselIn, patientsList));
+                Patient tempPatient = Actions.findPatient(peselIn, patientsList);
+                if (tempPatient != null) {
+                    runCoronaTest(tempPatient);
+                }
                 start();
                 break;
 
@@ -168,7 +171,6 @@ public class Main {
 
 
         patientsList.add(new Patient(nameIn, surnameIn, peselIn, Corona.BRAK_DANYCH, walletIn));
-
         creatingXLSX.createExcel(patientsList);
         System.out.println("Zostałeś zarejestrowany!");
     }
@@ -185,6 +187,7 @@ public class Main {
             System.out.println("Udało Ci się usunąć pacjenta: " + tempPatient.toString());
         }
     }
+
     public static void runCoronaTest(Patient patient) {
 
         double wallet = patient.getWallet();
@@ -200,7 +203,6 @@ public class Main {
 
         System.out.println("Czy jesteś chory na koronawirusa? Wybierz odpowiednią wartość: \n0 Oczywiście, że nie " +
                 "\n1 No pewnie, że tak \n2 Nie wiem");
-        Scanner scanner = new Scanner(System.in);
         int a = scanner.nextInt();
         switch (a) {
             case 0: {
@@ -221,7 +223,12 @@ public class Main {
             case 2: {
                 Random generator = new Random();
                 System.out.println("Poliż ekran i wpisz OK");
-                if (scanner.next().equalsIgnoreCase("OK")) {
+                String lick = scanner.next();
+                while (lick.equalsIgnoreCase("ok") == false) {
+                    System.out.println("Poliż ekran i wpisz OK. Dokładnie OK. Nie wpisuj niczego innego, bo test będzie niewiarygodny");
+                    lick = scanner.next();
+                }
+                if (lick.equalsIgnoreCase("OK")) {
                     System.out.println("Przeprowadzam analizę...");
                    /* TimeUnit.SECONDS.sleep(2);
                     System.out.println("Nadal analizuję...");
